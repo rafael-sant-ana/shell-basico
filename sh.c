@@ -25,7 +25,7 @@ The group members declare that they have not copied material from the Internet
 Fill in the lines below with the name and email of the group members.
 Replace XX with the contribution of each group member in the development of the work.
 
-Name <email@ufmg.br> XX%
+Rafael Vinicios de Santana Mathias <rafael-sant-ana@ufmg.br> XX%
 Name <email@ufmg.br> XX%
 
 3. Solutions
@@ -113,7 +113,7 @@ void runcmd(struct cmd *cmd) {
             pcmd = (struct pipecmd *)cmd;
             handle_pipe(pcmd, p, r);
             break;
-    }
+    } 
     exit(0);
 }
 
@@ -122,14 +122,27 @@ int fork1(void) {
     The function is supposed to create a new process using the `fork()` system call.
     It should print a message if the fork fails, otherwise return the process ID of the child process (or -1 if the fork fails).
     */
-    fprintf(stderr, "Fork function not implemented\n");
-    exit(-1);
+    int pid = fork();
+    if (pid < 0) { // -1 se falha
+        fprintf(stderr, "Fork failed\n");
+        return -1;
+    }
+    return pid;
     /* END OF TASK 1 */
 }
 
 void handle_simple_cmd(struct execcmd *ecmd) {
     /* Task 2: Implement the code below to execute simple commands. */
-    fprintf(stderr, "exec not implemented\n");
+    
+    // se digito "ls -l", argv[0] = "ls", argv[1] = "-l", argv[2] = NULL
+    if (ecmd->argv[0] == NULL) {
+        exit(0);
+    }
+    // troca processo atual pelo comando a ser executado
+    execvp(ecmd->argv[0], ecmd->argv);
+
+    perror("execvp failed");
+    exit(-1);
     /* END OF TASK 2 */
 }
 
