@@ -32,9 +32,16 @@ Name <email@ufmg.br> XX%
 
 Briefly describe the solutions implemented for this project and justify their choices.
 
+
+
 4. Bibliographic references
 
 Add the bibliographic references here.
+1) https://www.programacaoprogressiva.net/2014/09/Pipes-em-C-Comunicao-entre-Processos-IPC-Interprocess-Communication.html
+2) https://www.geeksforgeeks.org/c/dup-dup2-linux-system-call/
+3) https://www.geeksforgeeks.org/linux-unix/chdir-in-c-language-with-examples/
+4) https://www.dca.ufrn.br/~adelardo/cursos/DCA409/node39.html
+5) https://www.ionos.com/pt-br/digitalguide/sites-de-internet/desenvolvimento-web/execvp/
 
 */
 
@@ -148,13 +155,49 @@ void handle_simple_cmd(struct execcmd *ecmd) {
 
 void handle_redirection(struct redircmd *rcmd) {
     /* Task 3: Implement the code below to handle input/output redirection. */
-    fprintf(stderr, "redir not implemented\n");
+    int fd = open(rcmd->file, rcmd->mode, 0644);
+
+    if (fd < 0) {
+        fprintf(stderr, "Failed to open file: %s\n", rcmd->file);
+        exit(-1);
+    }
+
+    if (dup2(fd, rcmd->fd) < 0) {
+        fprintf(stderr, "Failed to redirect file descriptor\n");
+        close(fd);
+        exit(-1);
+    }
+
+    close(fd);
     /* END OF TASK 3 */
 }
 
 void handle_pipe(struct pipecmd *pcmd, int *p, int r) {
     /* Task 4: Implement the code below to handle pipes. */
-    fprintf(stderr, "pipe not implemented\n");
+    pipe(p); // cria um pipe, p[0] pra ler e p[1] pra escrever
+
+    if (fork1() == 0) { // filho para o lado esquerdo do pipe
+        close(p[0]); //fecho leitura
+        dup2(p[1], STDOUT_FILENO); // redireciona a saida padrão pra escrita do pipe
+        close(p[1]); // posso fechar escrita porque ja redirecionei
+        runcmd(pcmd->left); // executa o comando do lado esquerdo do pipe
+        // se cheguei aqui eh pq eu estou no filho do pcmd->right
+    }
+    // porque o primeiro rodou o runcmd e morreu lá
+
+    if (fork1() == 0) { // filho para o lado direito do pipe
+        close(p[1]); //fecho escrita ( n uso )
+        dup2(p[0], STDIN_FILENO); // entrada padrao vira leitura do pipe
+        close(p[0]); // posso fechar leitura porque ja redirecionei
+        runcmd(pcmd->right); // executa o comando do lado direito do pipe
+    }
+    
+    // se eu to aqui, eu sou o processo pai
+    close(p[0]); // fecho leitura
+    close(p[1]); // fecho escrita
+    wait(&r); // espero o filho do lado esquerdo do pipe terminar
+    wait(&r); // espero o filho do lado direito do pipe terminar
+
     /* END OF TASK 4 */
 }
 
@@ -177,12 +220,23 @@ int main(void) {
         /* Task 5: Explain the purpose of the if statement below and correct the error message.
         Why is the current error message incorrect? Justify the new message. */
         /* Answer:
-
+          se o chdir for < 0, significa que o comando cd falhou, provavelmente porque o diretorio especificado não existe
+          ou o usuário não tem permissão para acessá-lo.
+          
+          O erro "process does not exist" é incorreto porque o problema não é que
+          o processo não existe, mas sim que o diretório especificado 
+          para o comando cd não pode ser acessado.
+          
+          A mensagem de erro corrigida
+          "Failed to change directory: No such file or directory"
+          é mais precisa, pois indica claramente que a falha ocorreu ao tentar mudar de diretório
+          e que o motivo é que o diretório especificado não existe
+          ou não pode ser encontrado.
          */
         if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' ') {
             buf[strlen(buf) - 1] = 0;
-            if (chdir(buf + 3) < 0)
-                fprintf(stderr, "process does not exist\n");
+            if (chdir(buf + 3) < 0) // chdir muda o meu diretorio de trabalho
+                fprintf(stderr, "failed to change directory: no such file / directory\n");
             continue;
         }
         /* END OF TASK 5 */
