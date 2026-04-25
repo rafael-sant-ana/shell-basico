@@ -171,7 +171,7 @@ int fork1(void) {
     int pid = fork();
     if (pid < 0) { // -1 se falha
         fprintf(stderr, "Fork failed\n");
-        return -1;
+        exit(-1);;
     }
     return pid;
     /* END OF TASK 1 */
@@ -213,15 +213,18 @@ void handle_redirection(struct redircmd *rcmd) {
 
 void handle_pipe(struct pipecmd *pcmd, int *p, int r) {
     /* Task 4: Implement the code below to handle pipes. */
-    pipe(p); // cria um pipe, p[0] pra ler e p[1] pra escrever
+    if (pipe(p) < 0) {
+        fprintf(stderr, "Erro ao criar o pipe\n");
+        exit(-1);
+    } // cria um pipe, p[0] pra ler e p[1] pra escrever
 
     if (fork1() == 0) { // filho para o lado esquerdo do pipe
         close(p[0]); //fecho leitura
         dup2(p[1], STDOUT_FILENO); // redireciona a saida padrão pra escrita do pipe
         close(p[1]); // posso fechar escrita porque ja redirecionei
         runcmd(pcmd->left); // executa o comando do lado esquerdo do pipe
-        // se cheguei aqui eh pq eu estou no filho do pcmd->right
     }
+    // se cheguei aqui eh pq eu estou no filho do pcmd->right
     // porque o primeiro rodou o runcmd e morreu lá
 
     if (fork1() == 0) { // filho para o lado direito do pipe
