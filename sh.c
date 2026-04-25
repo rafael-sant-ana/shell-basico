@@ -25,23 +25,62 @@ The group members declare that they have not copied material from the Internet
 Fill in the lines below with the name and email of the group members.
 Replace XX with the contribution of each group member in the development of the work.
 
-Rafael Vinicios de Santana Mathias <rafael-sant-ana@ufmg.br> XX%
-Name <email@ufmg.br> XX%
+Rafael Vinicios de Sant'Ana Mathias <rafael-sant-ana@ufmg.br> 50%
+Caio Cordeiro Fabri <caiofabri@ufmg.br> 50%
+
+Cada um de nós fez a implementação de todas as tarefas, e depois nos reunímos para escrever essa versão unificada e conversar sobre o código
 
 3. Solutions
 
 Briefly describe the solutions implemented for this project and justify their choices.
 
+Task 1 - fork1
+A função fork1 é um wrapper da função fork,
+em que se o resultado for -1, imprimimos erro e terminamos a execução.
+terminamos porque assim o processo pai não tenta
+computar com um process id invalido
 
+Task 2 - handle_simple_cmd
+Usamos execvp e nao execv porque o execvp procura o comando
+a ser executado no path, e aí não precisa passar o nome completo.
+por ex. posso fazer "ls" ao invés de "/bin/ls"
+se execvp retornar, é no geral porque o comando não existe ou não pode ser encontrado. entao imprimimos e terminamos com -1 pro processo-filho não voltar pro loop principal do shell
+
+Task 3 - handle_redirection
+Usamos open para abrir o arquivo de redirecionamento,
+com o modo e fd que já estão definidos em redircmd,
+usamos dup2 para redirecionar o fd apropriado (0 (<) ou 1 (>)) pro fd do a rquivo,
+e aí fechamos o fd original para evitar leak
+
+Task 4 - handle_pipe
+Essa foi a mais legal, usamos pipe() pra criar um buffer
+e ai fazemos dois fork, o da esquerda tem o stdout redirecionado para pipe[1] com o dup2
+e executamos o comando da esquerda
+
+o da direita tem o sdin redirecionado para o pipe[0] com o dup2
+e executamos o comando da direita
+
+o pai fecha ambos pipes e chama wait() duas vezes para esperar ambos os filhos ao inves de só um
+para nao ter processos-zumbi
+
+cada processo fecha tambem o lado do pipe que ele nao usa.
+isso garante que o processo da direita vai receber EOF quando
+o processo da esquerda terminar de escrever.
+
+Task 5 - cd e mensagem de erro
+o cd é tratado pelo processo-pai porque chdir() deve afetar o shell como um todo
+se executasse num filho, a mudança só afetaria o processo filho, e perderiamos quando o processo morresse
+
+a mensagem estava incorreta, conforme explicado no codigo.
 
 4. Bibliographic references
 
 Add the bibliographic references here.
-1) https://www.programacaoprogressiva.net/2014/09/Pipes-em-C-Comunicao-entre-Processos-IPC-Interprocess-Communication.html
-2) https://www.geeksforgeeks.org/c/dup-dup2-linux-system-call/
-3) https://www.geeksforgeeks.org/linux-unix/chdir-in-c-language-with-examples/
-4) https://www.dca.ufrn.br/~adelardo/cursos/DCA409/node39.html
-5) https://www.ionos.com/pt-br/digitalguide/sites-de-internet/desenvolvimento-web/execvp/
+1) https://www.programacaoprogressiva.net/2014/09/Pipes-em-C-Comunicao-entre-Processos-IPC-Interprocess-Communication.html - acesso em 24/04/2026
+2) https://www.geeksforgeeks.org/c/dup-dup2-linux-system-call/ - acesso em 24/04/2026
+3) https://www.geeksforgeeks.org/linux-unix/chdir-in-c-language-with-examples/ - acesso em 24/04/2026
+4) https://www.dca.ufrn.br/~adelardo/cursos/DCA409/node39.html - acesso em 24/04/2026
+5) https://www.ionos.com/pt-br/digitalguide/sites-de-internet/desenvolvimento-web/execvp/ - acesso em 24/04/2026
 
 */
 
